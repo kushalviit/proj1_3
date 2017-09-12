@@ -1,12 +1,10 @@
 module andimp;
-reg in1;
-reg in2;
+
 wire in1_,in2_,out_;
 
-assign(in1,0);
-assign(in2,0);
-assign(in1_,in1);
-assign(in2_,in2);
+
+evl_zero(in1_);
+evl_one(in2_);
 and(in1_,in2_,out_);
 
 endmodule

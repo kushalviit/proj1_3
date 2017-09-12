@@ -1,18 +1,16 @@
 module top;
-reg a;
-reg b;
 
 wire input, outd,outj,outjp,clk;
-wire a_,b_;
+wire _a,_b;
 
-assign(a,0);
-assign(b,0);
-assign(a_,a);
-assign(b_,b);
+evl_zero(a_);
+evl_one(b_);
+
 evl_clock(clk);
 
 evl_dff(input,outd,clk);
 
-evl_jkff(a_,b_,outj,outjp,clk);
+not(a_,outj);
+not(b_,outp);
 
 endmodule

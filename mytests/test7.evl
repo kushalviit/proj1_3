@@ -1,20 +1,4 @@
-module nottest;
-reg in1;
-reg in2;
-reg [2]out;
-wire in1_,in2_,out_[2];
-
-assign(in1,0);
-assign(in2,1);
-assign(in1_,in1);
-
-
-not(in1_,out[0]);
-
-assign(out_[0],out[0]);
-assign(in2_,in2);
-
-not(in2_,out[1]);
-assign(out_[1],out[1]);
-
-endmodule
+0 1 2
+5 68 75
+f8012
+4 2 3
