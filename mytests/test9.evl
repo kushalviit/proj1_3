@@ -1,10 +1,12 @@
 module ortest;
-reg in1=1;
-reg in2=1;
+reg in1;
+reg in2;
 wire in1_,in2_,out_;
 
-assign in1_=in1;
-assign in2_=in2;
+assign(in1,0);
+assign(in2,1);
+assign(in1_,in1);
+assign(in2_,in2);
 
 or(in1_,in2_,out_);
 
