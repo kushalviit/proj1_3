@@ -1,0 +1,10 @@
+module andimp;
+reg in1=0;
+reg in2=0;
+wire in1_,in2_,out_;
+
+assign in1_=in1;
+assign in2_=in2;
+and(in1_,in2_,out_);
+
+endmodule

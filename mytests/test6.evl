@@ -1,0 +1,16 @@
+module top;
+reg a=0;
+reg b=1;
+
+wire input, outd,outj,outjp,clk;
+wire a_,b_;
+
+assign a_=a;
+assign b_=b;
+evl_clock(clk);
+
+evl_dff(input,outd,clk);
+
+evl_jkff(a_,b_,outj,outjp,clk);
+
+endmodule

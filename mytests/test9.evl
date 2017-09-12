@@ -1,0 +1,11 @@
+module ortest;
+reg in1=1;
+reg in2=1;
+wire in1_,in2_,out_;
+
+assign in1_=in1;
+assign in2_=in2;
+
+or(in1_,in2_,out_);
+
+endmodule
