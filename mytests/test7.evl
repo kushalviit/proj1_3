@@ -12,10 +12,9 @@ assign(in1_,in1);
 not(in1_,out[0]);
 
 assign(out_[0],out[0]);
-assign in2_=in2;
+assign(in2_,in2);
 
 not(in2_,out[1]);
 assign(out_[1],out[1]);
 
 endmodule
-
