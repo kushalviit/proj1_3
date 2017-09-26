@@ -191,18 +191,44 @@ int main(int argc, char *argv[])
     {
         return -1;
     }
+    //display on screen
+    //comment the next statement to not to see the tokens on command screen
     display_tokens(std::cout,tokens);
 
-    std::string output_file_name = std::string(argv[1])+".tokens";
-    std::ofstream output_file(output_file_name);
+    
+    //storing tokens in a file
+   //to not to store comment the next block
+    std::string output_lex_file_name = std::string(argv[1])+".tokens";
+    std::ofstream output_lex_file(output_lex_file_name);
 
     if (!output_file)
     {
         std::cerr << "I can't write " << argv[1] << ".tokens ." << std::endl;
         return -1;
     }
-
-   display_tokens(output_file,tokens);
+   display_tokens(output_lex_file,tokens);
+   
+   evl_statements statements;
     
+    if(!group_tokens_into_statements(statements,tokens))
+    {
+     return -1;
+    }
+    //display on screen
+    display_statements(std::cout,statements);
+
+   
+    //store output in file
+    std::string output_syn_file_name = std::string(argv[1])+".syntax";
+    std::ofstream output_syn_file(output_syn_file_name);
+
+    if (!output_file)
+    {
+        std::cerr << "I can't write " << argv[1] << ".syntax ." << std::endl;
+        return -1;
+    }
+
+    display_statements(output_syn_file,statements);
+ 
     return 0;
 }
