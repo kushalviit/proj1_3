@@ -1,8 +1,4 @@
-wire1	, 	wire2
-; reg 
-end module
-
-
-
-
-
+module top  ;
+module top;
+module top        ;
+module top;
