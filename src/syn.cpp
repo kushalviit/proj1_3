@@ -3,6 +3,7 @@
 #include <string>
 #include <list>
 
+//definition and typing of tokens
 struct evl_token {
 enum token_type {NAME, NUMBER, SINGLE};
 token_type type;
@@ -11,6 +12,18 @@ int line_no;
 }; // struct evl_token
 
 typedef std::list<evl_token> evl_tokens;
+
+//definition and typing of statements
+
+struct evl_statement{
+   enum statement_type{MODULE,WIRE,COMPONENT,ENDMODULE};
+   
+   statement_type type;
+   evl_tokens tokens;
+}; //struct evl_statement
+
+typedef std::list<evl_statement> evl_statements;
+
 
 
 //function to extract tokens from line
