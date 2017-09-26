@@ -1,34 +1,25 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <list>
 
-int main(int argc, char *argv[])
+struct evl_token {
+enum token_type {NAME, NUMBER, SINGLE};
+token_type type;
+std::string str;
+int line_no;
+}; // struct evl_token
+
+typedef std::list<evl_token> evl_tokens;
+
+
+//function to extract tokens from line
+bool extract_tokens_from_line(const std::string line, const int line_no, evl_tokens &otokens)
 {
-    if (argc < 2)
-    {
-        std::cerr << "You should provide a file name." << std::endl;
-        return -1;
-    }
 
-    std::ifstream input_file(argv[1]);
-    if (!input_file)
-    {
-        std::cerr << "I can't read " << argv[1] << "." << std::endl;
-        return -1;
-    }
 
-    std::string output_file_name = std::string(argv[1])+".tokens";
-    std::ofstream output_file(output_file_name);
-    if (!output_file)
-    {
-        std::cerr << "I can't write " << argv[1] << ".tokens ." << std::endl;
-        return -1;
-    }
 
-    std::string line;
-    for (int line_no = 1; std::getline(input_file, line); ++line_no)
-    {
-        for (size_t i = 0; i < line.size();)
+for (size_t i = 0; i < line.size();)
         {
             // comments
             if (line[i] == '/')
@@ -38,7 +29,7 @@ int main(int argc, char *argv[])
                 {
                     std::cerr << "LINE " << line_no
                         << ": a single / is not allowed" << std::endl;
-                    return -1;
+                    return false;
                 }
                 break; // skip the rest of the line by exiting the loop
             }
@@ -57,7 +48,11 @@ int main(int argc, char *argv[])
                 || (line[i] == ':') || (line[i] == ';')
                 || (line[i] == ','))
             {
-                output_file << "SINGLE " << line[i] << std::endl;
+                evl_token temp_token;
+                temp_token.line_no=line_no;
+                temp_token.type=evl_token::SINGLE;
+                temp_token.str=std::string(1,line[i]);
+                otokens.push_back(temp_token);
                 ++i; // we consumed this character
                 continue; // skip the rest of the iteration
             }
@@ -78,8 +73,12 @@ int main(int argc, char *argv[])
                         break; // [name_begin, i) is the range for the token
                     }
                 }
-                output_file << "NAME "
-                    << line.substr(name_begin, i-name_begin) << std::endl;
+                evl_token temp_token;
+                temp_token.line_no=line_no;
+                temp_token.type=evl_token::NAME;
+                temp_token.str=line.substr(name_begin,i-name_begin);
+                otokens.push_back(temp_token);
+                
             }
             // NUMBER
             else if((line[i]>='0')&&(line[i]<='9'))
@@ -93,17 +92,104 @@ int main(int argc, char *argv[])
                      }
 
                    }
-                   output_file<<"NUMBER "
-                        <<line.substr(number_begin,i-number_begin)<<std::endl;
+                   evl_token temp_token;
+                   temp_token.line_no=line_no;
+                   temp_token.type=evl_token::NUMBER;
+                   temp_token.str=line.substr(number_begin,i-number_begin);
+                   otokens.push_back(temp_token);
             }
             else
             {
                 std::cerr << "LINE " << line_no
                     << ": invalid character" << std::endl;
-                return -1;
+                return false;
             }
         }
+
+
+
+
+return true;
+}
+
+
+
+
+//function to extract tokens from file
+bool extract_tokens_from_file(std::string &input_file_name,evl_tokens &iotokens)
+{
+
+std::ifstream input_file(input_file_name);
+
+if(!input_file)
+{
+std::cerr<<"Cannot read the input file "<<input_file_name<< " ."<<std::endl;
+return false;
+}
+
+std::string line;
+
+iotokens.clear(); // making sure tokens list is empty
+
+for (int line_no = 1; std::getline(input_file, line); ++line_no)
+{
+   //extract tokens from each line
+    if(!extract_tokens_from_line(line,line_no,iotokens))
+     return false;
+}
+
+return true;
+} 
+
+
+void display_tokens(std::ostream &out, const evl_tokens &show_tokens)
+{
+  for (evl_tokens::const_iterator iter = show_tokens.begin();iter != show_tokens.end(); ++iter)
+   {
+         if (iter->type == evl_token::SINGLE) {
+                         out << "SINGLE " << iter->str << std::endl;
+                      }
+         else if (iter->type == evl_token::NAME) {
+                    out << "NAME " << iter->str << std::endl;
+                     }
+          else { // must be NUMBER
+                out << "NUMBER " << iter->str << std::endl;
+              }
+   } 
+
+
+}
+
+
+
+
+
+int main(int argc, char *argv[])
+{
+    if (argc < 2)
+    {
+        std::cerr << "You should provide a file name." << std::endl;
+        return -1;
     }
 
+    std::string evl_file=argv[1];
+    evl_tokens tokens;
+    if(!extract_tokens_from_file(evl_file,tokens))
+    {
+        return -1;
+    }
+    display_tokens(std::cout,tokens);
+
+    std::string output_file_name = std::string(argv[1])+".tokens";
+    std::ofstream output_file(output_file_name);
+
+    if (!output_file)
+    {
+        std::cerr << "I can't write " << argv[1] << ".tokens ." << std::endl;
+        return -1;
+    }
+
+   display_tokens(output_file,tokens);
+    
     return 0;
 }
