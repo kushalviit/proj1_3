@@ -2,6 +2,10 @@
 #include <fstream>
 #include <string>
 #include <list>
+#include <assert.h>
+#include <algorithm>
+
+
 
 //definition and typing of tokens
 struct evl_token {
@@ -174,8 +178,106 @@ void display_tokens(std::ostream &out, const evl_tokens &show_tokens)
 }
 
 
+bool token_is_semicolon(const evl_token &token) {
+return token.str == ";";
+}
 
 
+bool move_tokens_to_statement(evl_tokens &statement_tokens,
+evl_tokens &tokens)
+{
+
+assert(statement_tokens.empty());
+evl_tokens::iterator next_sc=std::find_if(tokens.begin(),tokens.end(),token_is_semicolon);
+if(next_sc==tokens.end()){
+std::cerr << "Look for ’;’ but reach the end of file" << std::endl;
+return false;
+}
+
+evl_tokens::iterator after_sc=next_sc;
+++after_sc;
+statement_tokens.splice(statement_tokens.begin(),tokens,tokens.begin(),after_sc);
+
+return true;
+}
+
+
+
+bool group_tokens_into_statements(evl_statements &iostatements,evl_tokens &itokens)
+{
+
+for(;!itokens.empty();)
+{
+evl_token token = itokens.front();
+if(token.str=="module")
+{
+evl_statement module;
+module.type=evl_statement::MODULE;
+  if(!move_tokens_to_statement(module.tokens,itokens))
+    return false;
+iostatements.push_back(module);
+}
+else if(token.str=="wire")
+{
+evl_statement wire;
+wire.type=evl_statement::WIRE;
+  if(!move_tokens_to_statement(wire.tokens,itokens))
+    return false;
+iostatements.push_back(wire);
+}
+else if((token.type==evl_token::NAME)&&(token.str!="module")
+&&(token.str!="wire")&&(token.str!="endmodule"))
+{
+evl_statement component;
+component.type=evl_statement::COMPONENT;
+  if(!move_tokens_to_statement(component.tokens,itokens))
+    return false;
+iostatements.push_back(component);
+}
+else if(token.str=="endmodule")
+{
+evl_statement endmodule;
+endmodule.type=evl_statement::ENDMODULE;
+endmodule.tokens.push_back(token);
+itokens.pop_front();
+iostatements.push_back(endmodule);
+}
+else
+{
+    std::cerr<<"Unknown Statement @ token"<<token.str<<"in line: "<<token.line_no<<std::endl;
+    return false;
+}
+
+}
+
+return true;
+}
+
+void display_statements(std::ostream &out, const evl_statements &show_statements)
+{
+int i=0;
+  for (evl_statements::const_iterator iter = show_statements.begin();iter != show_statements.end(); ++iter,++i)
+   {
+         if(iter->type == evl_statement::MODULE){
+               out << "Statement "<<i<<": MODULE ,"<<iter->tokens.size()<<" tokens" <<std::endl;
+            
+         }
+         else if(iter->type==evl_statement::WIRE){
+              out << "Statement "<<i<<": WIRE ,"<<iter->tokens.size()<<" tokens" <<std::endl;
+         }
+         else if(iter->type==evl_statement::COMPONENT){
+              out << "Statement "<<i<<": COMPONENT ,"<<iter->tokens.size()<<" tokens" <<std::endl;
+         }
+         else if (iter->type == evl_statement::ENDMODULE) {
+             out << "Statement "<<i<<":ENDMODULE , "<<iter->tokens.size()<<" tokens" <<std::endl;
+               }
+          else { //Unknown token at this point
+                out << "Unknown token at this point "<< std::endl;
+              }
+   }
+
+
+}
 
 int main(int argc, char *argv[])
 {
@@ -201,7 +303,7 @@ int main(int argc, char *argv[])
     std::string output_lex_file_name = std::string(argv[1])+".tokens";
     std::ofstream output_lex_file(output_lex_file_name);
 
-    if (!output_file)
+    if (!output_lex_file)
     {
         std::cerr << "I can't write " << argv[1] << ".tokens ." << std::endl;
         return -1;
@@ -217,18 +319,6 @@ int main(int argc, char *argv[])
     //display on screen
     display_statements(std::cout,statements);
 
-   
-    //store output in file
-    std::string output_syn_file_name = std::string(argv[1])+".syntax";
-    std::ofstream output_syn_file(output_syn_file_name);
-
-    if (!output_file)
-    {
-        std::cerr << "I can't write " << argv[1] << ".syntax ." << std::endl;
-        return -1;
-    }
-
-    display_statements(output_syn_file,statements);
  
     return 0;
 }
