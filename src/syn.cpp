@@ -310,7 +310,7 @@ state_type state=state_type::INIT;
 
 evl_tokens::const_iterator index;
 
-for(index = statement.tokens.begin();(index!=statement.tokens.end()||state==state_type::DONE);)
+for(index = statement.tokens.begin();index!=statement.tokens.end();)
 {
   if(index->str=="module" && state==state_type::INIT)
     {
@@ -326,11 +326,12 @@ for(index = statement.tokens.begin();(index!=statement.tokens.end()||state==stat
    else if(index->str==";" && state==state_type::MODULENAME)
        {
            state=state_type::DONE;
-            ++index;      
+            ++index; 
+           break;     
         }
      else
       {
-       std::cerr<<"MODULE STATEMENT SYNTAX ERROR at LINE: "<<index->line_no<<std::endl;
+       std::cerr<<"MODULE STATEMENT SYNTAX ERROR NEAR -->"<<index->str<<"in line: "<<index->line_no<<std::endl;
        return false;
       }
 }
@@ -338,7 +339,7 @@ for(index = statement.tokens.begin();(index!=statement.tokens.end()||state==stat
 if(!(index==statement.tokens.end() && state==state_type::DONE))
 {
 --index;
-std::cerr<<"MODULE STATEMENT SYNTAX ERROR at LINE: "<<index->line_no<<std::endl;
+std::cerr<<"MODULE STATEMENT SYNTAX ERROR NEAR -->"<<index->str<<"in line:"<<index->line_no<<std::endl;
 return false;
 }
 
@@ -382,7 +383,7 @@ evl_statements::iterator bac=istatements.end();
 --bac;
 if(bac->type != evl_statement::ENDMODULE){
      evl_token first_token=bac->tokens.front();    
-     std::cerr <<"SYNTAX ERROR around LINE "<<first_token.line_no<<" :The first statement should be of type ENDMODULE" <<std::endl;
+     std::cerr <<"SYNTAX ERROR around LINE "<<first_token.line_no<<" :The last statement should be of type ENDMODULE" <<std::endl;
      return false;
       }
 //check if there are any module/endmodule in between
@@ -474,6 +475,6 @@ int main(int argc, char *argv[])
     //display on screen
     display_statements(std::cout,statements);
 
- 
+    proper_syntax(statements); 
     return 0;
 }
