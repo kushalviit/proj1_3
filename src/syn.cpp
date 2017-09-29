@@ -42,7 +42,7 @@ struct evl_module{
       evl_wires wires;
 };
 
-evl_module global_module;
+
 
 //function to extract tokens from line
 bool extract_tokens_from_line(const std::string line, const int line_no, evl_tokens &otokens)
@@ -295,7 +295,7 @@ int i=0;
 }
 
 
-bool proper_module(const evl_statement statement)
+bool proper_module(const evl_statement statement,evl_module &inglobal_module)
 {
 
  if(statement.tokens.size()!=3)
@@ -318,7 +318,7 @@ for(index = statement.tokens.begin();index!=statement.tokens.end();)
   else if (index->type==evl_token::NAME && state==state_type::MODULE)
       { 
           state=state_type::MODULENAME;
-          global_module.module_name=index->str;
+          inglobal_module.module_name=index->str;
          ++index;
        }        
    else if(index->str==";" && state==state_type::MODULENAME)
@@ -368,7 +368,7 @@ return true;
 
 
 
-bool proper_wire_syntax(const evl_statement statement)
+bool proper_wire_syntax(const evl_statement statement,evl_module &inglobal_module)
 {
 
 enum state_type {INIT, WIRE,WIRENAME,WIRES,BUS,BUSMSB,BUSCOLON,BUSLSB,BUSDONE,DONE};
@@ -394,7 +394,7 @@ for(index = statement.tokens.begin();index!=statement.tokens.end();)
           temp_wire.LSB=0;
           temp_wire.bus_size=1;
          }
-          global_module.wires.push_back(temp_wire);
+          inglobal_module.wires.push_back(temp_wire);
          state=state_type::WIRENAME;
          ++index;
        }
@@ -407,7 +407,7 @@ for(index = statement.tokens.begin();index!=statement.tokens.end();)
       {
           state=state_type::WIRENAME;
           temp_wire.wire_name=index->str;
-          global_module.wires.push_back(temp_wire);
+          inglobal_module.wires.push_back(temp_wire);
          ++index;
        }
     else if(index->str==";" && state==state_type::WIRENAME)
@@ -467,7 +467,7 @@ return true;
 
 
 //function to check syntax
-bool proper_syntax(evl_statements &istatements)
+bool proper_syntax(evl_statements &istatements,evl_module &iglobal_module)
 {
 //check if the very first statement
 evl_statements::iterator beg=istatements.begin();
@@ -513,7 +513,7 @@ if(next_end_mod!=bac)
 }
 
 //check module statement
-if(!proper_module(istatements.front()))
+if(!proper_module(istatements.front(),iglobal_module))
 {
 return false;
 }
@@ -528,16 +528,16 @@ istatements.pop_back();
 
 for(;!(istatements.empty());)
 {
-evl_statement front=istatements.front();
-if(front.type==evl_statement::WIRE)
+evl_statement sfront=istatements.front();
+if(sfront.type==evl_statement::WIRE)
 {
-   if(!proper_wire_syntax(front))
+   if(!proper_wire_syntax(sfront,iglobal_module))
       return false;
 istatements.pop_front();
 }
-else if(front.type==evl_statement::COMPONENT)
+else if(sfront.type==evl_statement::COMPONENT)
 {
-   //if(!proper_component_syntax(front))
+   //if(!proper_component_syntax(sfront,iglobal_module))
    //   return false;
 std::cout<<"currently not supporting syntax of COMPONENT Statements"<<std::endl;
 istatements.pop_front();
@@ -549,9 +549,19 @@ return false;
 }
 }
 
-
-
 return true;
+}
+
+
+
+void display_syntax(std::ostream &out, const evl_module &out_module)
+{
+out << "module "<< out_module.module_name <<std::endl;
+out << "wires "<< out_module.wires.size() <<std::endl;
+for (evl_wires::const_iterator index = out_module.wires.begin();index!= out_module.wires.end(); ++index)
+{
+out << "  wire "<< index->wire_name <<" "<<index->bus_size<<std::endl;
+}
 }
 
 
@@ -588,7 +598,7 @@ int main(int argc, char *argv[])
    display_tokens(output_lex_file,tokens);
    
    evl_statements statements;
-    
+      
     if(!group_tokens_into_statements(statements,tokens))
     {
      return -1;
@@ -596,6 +606,11 @@ int main(int argc, char *argv[])
     //display on screen
     display_statements(std::cout,statements);
 
-    proper_syntax(statements); 
+    evl_module global_module;
+    proper_syntax(statements,global_module); 
+   
+  
+    display_syntax(std::cout,global_module);  
+   
     return 0;
 }
