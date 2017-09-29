@@ -1,1 +1,5 @@
 module top;
+
+wire in;
+
+endmodule

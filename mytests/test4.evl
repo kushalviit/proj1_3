@@ -1,4 +1,6 @@
 module top  ;
-module top;
-module top        ;
-module top;
+
+wire [7:0] in;
+
+
+endmodule

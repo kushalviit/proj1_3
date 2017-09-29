@@ -1,0 +1,6 @@
+Statement 0: MODULE ,3 tokens
+Statement 1: WIRE ,5 tokens
+Statement 2: WIRE ,3 tokens
+Statement 3: WIRE ,3 tokens
+Statement 4: WIRE ,3 tokens
+Statement 5:ENDMODULE , 1 tokens

@@ -1,3 +1,8 @@
 module top;
 
+wire [7:0] a,b,out;
+wire in,r;
+
+
+
 endmodule

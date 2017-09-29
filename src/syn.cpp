@@ -582,8 +582,11 @@ int main(int argc, char *argv[])
     }
     //display on screen
     //comment the next statement to not to see the tokens on command screen
+    std::cout << "\n Displaying extracted tokens:"<< std::endl;
+    std::cout << "===================================================================="<< std::endl;
     display_tokens(std::cout,tokens);
-
+    std::cout <<"====================================================================="<< std::endl;
+    std::cout << "End of tokens display"<< std::endl;
     
     //storing tokens in a file
    //to not to store comment the next block
@@ -592,7 +595,7 @@ int main(int argc, char *argv[])
 
     if (!output_lex_file)
     {
-        std::cerr << "I can't write " << argv[1] << ".tokens ." << std::endl;
+        std::cerr << "can't write " << argv[1] << ".tokens ." << std::endl;
         return -1;
     }
    display_tokens(output_lex_file,tokens);
@@ -604,13 +607,46 @@ int main(int argc, char *argv[])
      return -1;
     }
     //display on screen
+    std::cout << "\n \nDetails of grouped statements:"<< std::endl;
+    std::cout << "**************************************************************************************"<< std::endl;
     display_statements(std::cout,statements);
+    std::cout <<"***************************************************************************************"<< std::endl;
+    std::cout << "End of grouped statements display"<< std::endl;
 
-    evl_module global_module;
-    proper_syntax(statements,global_module); 
-   
-  
+
+    std::string output_statement_file_name = std::string(argv[1])+".statements";
+    std::ofstream output_statement_file(output_statement_file_name);
+
+    if (!output_statement_file)
+    {
+        std::cerr << "can't write " << argv[1] << ".statements ." << std::endl;
+        return -1;
+    }
+    display_statements(output_statement_file,statements);
+
+     evl_module global_module;
+    if(!proper_syntax(statements,global_module)) 
+     {
+      return -1;
+     }
+    
+    std::cout << "\n \nDetails of NETLIST extracted during syntax check:"<< std::endl;
+    std::cout <<"#########################################################################################"<< std::endl;
     display_syntax(std::cout,global_module);  
+    std::cout <<"#########################################################################################"<< std::endl;
+    std::cout << "End of NETLIST"<< std::endl;
+
    
+    std::string output_syntax_file_name = std::string(argv[1])+".syntax";
+    std::ofstream output_syntax_file(output_syntax_file_name);
+
+    if (!output_syntax_file)
+    {
+        std::cerr << "can't write " << argv[1] << ".syntax ." << std::endl;
+        return -1;
+    }
+    display_syntax(output_syntax_file,global_module);
+
+
     return 0;
 }

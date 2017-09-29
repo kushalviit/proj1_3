@@ -1,4 +1,8 @@
+module simulate;
+
+wire in,out;
+wire inter;
+wire j_1;
+wire u$;
+
 endmodule
-endmodule
-endmodule
-endmodule    endmodule
