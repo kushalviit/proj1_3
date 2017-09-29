@@ -204,7 +204,7 @@ evl_tokens &tokens)
 assert(statement_tokens.empty());
 evl_tokens::iterator next_sc=std::find_if(tokens.begin(),tokens.end(),token_is_semicolon);
 if(next_sc==tokens.end()){
-std::cerr << "Look for ’;’ but reach the end of file" << std::endl;
+std::cerr << "Unable to find ’;’ and group " << std::endl;
 return false;
 }
 
@@ -297,12 +297,10 @@ int i=0;
 
 bool proper_module(const evl_statement statement)
 {
-if(statement.tokens.size()!=3)
-{
- const evl_token first_token=statement.tokens.front();
- std::cerr<<"SYNTAX ERROR around LINE "<<first_token.line_no<<" : Number of tokens for MODULE statement should be three"<<std::endl;
-return false;
-}
+
+ if(statement.tokens.size()!=3)
+ std::cerr<<"SYNTAX ERROR : Number of tokens for MODULE statement should be three"<<std::endl;
+
 
 
 enum state_type {INIT, MODULE, MODULENAME,DONE};
@@ -331,7 +329,7 @@ for(index = statement.tokens.begin();index!=statement.tokens.end();)
         }
      else
       {
-       std::cerr<<"MODULE STATEMENT SYNTAX ERROR NEAR -->"<<index->str<<"in line: "<<index->line_no<<std::endl;
+       std::cerr<<"MODULE STATEMENT SYNTAX ERROR NEAR -->"<<index->str<<" in line: "<<index->line_no<<std::endl;
        return false;
       }
 }
@@ -368,6 +366,105 @@ return false;
 return true;
 }
 
+
+
+bool proper_wire_syntax(const evl_statement statement)
+{
+
+enum state_type {INIT, WIRE,WIRENAME,WIRES,BUS,BUSMSB,BUSCOLON,BUSLSB,BUSDONE,DONE};
+state_type state=state_type::INIT;
+
+evl_wire temp_wire;
+evl_tokens::const_iterator index;
+//global_module.wires bla blah
+for(index = statement.tokens.begin();index!=statement.tokens.end();)
+{
+
+  if(index->str=="wire" && state==state_type::INIT)
+    {
+         state=state_type::WIRE;
+           ++index;
+    }
+  else if (index->type==evl_token::NAME && (state==state_type::WIRE||state==state_type::BUSDONE))
+      {
+          temp_wire.wire_name=index->str;
+         if(state==state_type::WIRE)
+         {
+          temp_wire.MSB=0;
+          temp_wire.LSB=0;
+          temp_wire.bus_size=1;
+         }
+          global_module.wires.push_back(temp_wire);
+         state=state_type::WIRENAME;
+         ++index;
+       }
+   else if(index->str=="," && state==state_type::WIRENAME)
+       {
+           state=state_type::WIRES;
+            ++index;
+        }
+   else if (index->type==evl_token::NAME && state==state_type::WIRES)
+      {
+          state=state_type::WIRENAME;
+          temp_wire.wire_name=index->str;
+          global_module.wires.push_back(temp_wire);
+         ++index;
+       }
+    else if(index->str==";" && state==state_type::WIRENAME)
+       {
+           state=state_type::DONE;
+            ++index;
+           break;
+        }
+     else if (index->str=="[" && state==state_type::WIRE)
+      {
+          state=state_type::BUS;
+          ++index;
+       }
+     else if(index->type==evl_token::NUMBER && state==state_type::BUS)
+       {
+          state=state_type::BUSMSB;
+          std::string::size_type sz;
+          temp_wire.MSB=std::stoi(index->str,&sz);
+          ++index;
+       }
+     else  if(index->str==":" && state==state_type::BUSMSB)
+       {
+          state=state_type::BUSCOLON;
+          ++index;
+       }
+     else if(index->type==evl_token::NUMBER && state==state_type::BUSCOLON)
+       {
+          state=state_type::BUSLSB;
+          temp_wire.LSB=std::stoi(index->str,&sz);
+          temp_wire.bus_size=temp_wire.MSB-LSB+1;
+          ++index;
+        }
+    else if(index->str=="]"&& state==state_type::BUSLSB)
+       {
+          state=state_type::BUSDONE;
+         ++index;
+        }
+     else
+      {
+       std::cerr<<"WIRE STATEMENT SYNTAX ERROR NEAR -->"<<index->str<<" in line: "<<index->line_no<<std::endl;
+       return false;
+      }
+}
+
+if(!(index==statement.tokens.end() && state==state_type::DONE))
+{
+--index;
+std::cerr<<"WIRE STATEMENT SYNTAX ERROR NEAR -->"<<index->str<<"in line:"<<index->line_no<<std::endl;
+return false;
+}
+
+
+return true;
+}
+
+
+
 //function to check syntax
 bool proper_syntax(evl_statements &istatements)
 {
@@ -402,9 +499,6 @@ if(next_mod!=istatements.end())
   return false;
 }
 
-
-
-
 evl_statements::iterator next_end_mod=std::find_if(beg,bac,[](const evl_statement &statement){
 return statement.type==evl_statement::ENDMODULE;
 });
@@ -429,6 +523,32 @@ if(!proper_endmodule(istatements.back()))
 return false;
 }
 istatements.pop_back();
+
+
+for(;!(istatements.empty());)
+{
+evl_statement front=istatements.front();
+if(front.type==evl_statement::WIRE)
+{
+   if(!proper_wire_syntax(front))
+      return false;
+istatements.pop_front();
+}
+else if(front.type==evl_statement::COMPONENT)
+{
+   //if(!proper_component_syntax(front))
+   //   return false;
+std::cout<<"currently not supporting syntax of COMPONENT Statements"<<std::endl;
+istatements.pop_front();
+}
+else
+{
+std::cerr<<"SYNTAX ERROR:Unkown statement type;Statement should be of type MODULE/ENDMODULE/WIRE/COMPONENT"<<std::endl;
+return false
+}
+}
+
+
 
 return true;
 }
