@@ -436,8 +436,9 @@ for(index = statement.tokens.begin();index!=statement.tokens.end();)
      else if(index->type==evl_token::NUMBER && state==state_type::BUSCOLON)
        {
           state=state_type::BUSLSB;
+          std::string::size_type sz;
           temp_wire.LSB=std::stoi(index->str,&sz);
-          temp_wire.bus_size=temp_wire.MSB-LSB+1;
+          temp_wire.bus_size=temp_wire.MSB-temp_wire.LSB+1;
           ++index;
         }
     else if(index->str=="]"&& state==state_type::BUSLSB)
@@ -544,7 +545,7 @@ istatements.pop_front();
 else
 {
 std::cerr<<"SYNTAX ERROR:Unkown statement type;Statement should be of type MODULE/ENDMODULE/WIRE/COMPONENT"<<std::endl;
-return false
+return false;
 }
 }
 
