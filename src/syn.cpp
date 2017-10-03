@@ -35,11 +35,29 @@ struct evl_wire{
      int LSB;
 };
 
-typedef std::list<evl_wire>evl_wires;
+typedef std::list<evl_wire> evl_wires;
+
+struct evl_pin{
+     std::string pin_name;
+     int MSB;
+     int LSB;
+};
+
+typedef std::list<evl_pin> evl_pins;
+
+
+struct evl_component{
+       std::string type;
+       std::string component_name;
+       evl_pins pins;
+};
+
+typedef std::list<evl_component> evl_components;
 
 struct evl_module{
       std::string module_name;
       evl_wires wires;
+      evl_components components;
 };
 
 
@@ -464,6 +482,120 @@ return false;
 return true;
 }
 
+bool proper_component_syntax(const evl_statement statement,evl_module &inglobal_module)
+{
+
+enum state_type {INIT, TYPE, NAME,PINS,PINNAME,BUS,BUSMSB,BUSCOLON,BUSLSB,BUSDONE,PINDONE,DONE};
+state_type state=state_type::INIT;
+
+evl_pin temp_pin;
+evl_component temp_compnt;
+evl_tokens::const_iterator index;
+//global_module.wires bla blah
+for(index = statement.tokens.begin();index!=statement.tokens.end();)
+{
+
+  if(index->type==evl_token::NAME && state==state_type::INIT)
+    {
+         state=state_type::TYPE;
+         temp_compnt.type=index->str;
+         temp_compnt.component_name="";
+           ++index;
+    }
+  else if (index->type==evl_token::NAME && state==state_type::TYPE)
+      {
+          temp_compnt.component_name=index->str;
+         state=state_type::NAME;
+         ++index;
+       }
+   else if((index->str=="(" && (state==state_type::TYPE||state==state_type::NAME))||(index->str==","&&state==state_type::BUSDONE))
+       {
+          if(index->str==","&& state==state_type::BUSDONE)
+           {
+              temp_compnt.pins.push_back(temp_pin);
+             }
+           state=state_type::PINS;
+            ++index;
+        }
+   else if (index->type==evl_token::NAME && state==state_type::PINS)
+      {
+          state=state_type::PINNAME;
+          temp_pin.pin_name=index->str;
+          temp_pin.MSB=-1;
+          temp_pin.LSB=-1;
+         ++index;
+       }
+    else if(index->str=="," && state==state_type::PINNAME)
+      {
+           state=state_type::PINS;
+           temp_compnt.pins.push_back(temp_pin);
+            ++index;
+        }
+    else if(index->str==")" && state==state_type::PINNAME)
+      {
+         temp_compnt.pins.push_back(temp_pin);
+          state=state_type::PINDONE;        
+          ++index;
+       }
+     else if (index->str=="[" && state==state_type::PINNAME)
+      {
+          state=state_type::BUS;
+          ++index;
+       }
+     else if(index->type==evl_token::NUMBER && state==state_type::BUS)
+       {
+          state=state_type::BUSMSB;
+          std::string::size_type sz;
+          temp_pin.MSB=std::stoi(index->str,&sz);
+          ++index;
+       }
+     else  if(index->str==":" && state==state_type::BUSMSB)
+       {
+          state=state_type::BUSCOLON;
+          ++index;
+       }
+     else if(index->type==evl_token::NUMBER && state==state_type::BUSCOLON)
+       {
+          state=state_type::BUSLSB;
+          std::string::size_type sz;
+          temp_pin.LSB=std::stoi(index->str,&sz);
+          ++index;
+        }
+    else if(index->str=="]"&& (state==state_type::BUSLSB||state==state_type::BUSMSB))
+       {
+          state=state_type::BUSDONE;
+         ++index;
+        }
+     else if(index->str==")"&& state==state_type::BUSDONE)
+       {
+          temp_compnt.pins.push_back(temp_pin);
+          state=state_type::PINDONE;
+         ++index;
+        }
+     else if(index->str==";"&& state==state_type::PINDONE)
+       {
+          state=state_type::DONE;
+         ++index;
+        }
+     else
+      {
+       std::cerr<<"COMPONENT STATEMENT SYNTAX ERROR NEAR -->"<<index->str<<" in line: "<<index->line_no<<std::endl;
+       return false;
+      }
+}
+
+if(!(index==statement.tokens.end() && state==state_type::DONE))
+{
+--index;
+std::cerr<<"COMPONENT STATEMENT SYNTAX ERROR NEAR -->"<<index->str<<"in line:"<<index->line_no<<std::endl;
+return false;
+}
+
+inglobal_module.components.push_back(temp_compnt);
+return true;
+}
+
+
 
 
 //function to check syntax
@@ -537,9 +669,9 @@ istatements.pop_front();
 }
 else if(sfront.type==evl_statement::COMPONENT)
 {
-   //if(!proper_component_syntax(sfront,iglobal_module))
-   //   return false;
-std::cout<<"currently not supporting syntax of COMPONENT Statements"<<std::endl;
+   if(!proper_component_syntax(sfront,iglobal_module))
+      return false;
+//std::cout<<"currently not supporting syntax of COMPONENT Statements"<<std::endl;
 istatements.pop_front();
 }
 else
@@ -562,6 +694,30 @@ for (evl_wires::const_iterator index = out_module.wires.begin();index!= out_modu
 {
 out << "  wire "<< index->wire_name <<" "<<index->bus_size<<std::endl;
 }
+
+out << "components "<< out_module.components.size() <<std::endl;
+for (evl_components::const_iterator cindex = out_module.components.begin();cindex!= out_module.components.end(); ++cindex)
+{
+out << "  component "<< cindex->type <<" ";
+if(cindex->component_name!="")
+out<<cindex->component_name<<" ";
+
+out<<cindex->pins.size()<<std::endl;
+
+        for (evl_pins::const_iterator pindex = cindex->pins.begin();pindex!= cindex->pins.end(); ++pindex)
+              {
+                    out << "    pin "<< pindex->pin_name;
+                    if(pindex->MSB!=-1)
+                    out<<" "<<pindex->MSB;
+                    if(pindex->LSB!=-1)
+                    out<<" "<<pindex->LSB;
+                  
+                    out<<std::endl;
+              }
+
+}
+
+
 }
 
 
